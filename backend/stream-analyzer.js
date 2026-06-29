@@ -18,6 +18,7 @@ export const StreamStatus = {
   OFFLINE: 'OFFLINE',     // 분석기 비활성
 };
 
+
 /**
  * YouTube 라이브 스트림에서 yt-dlp로 직접 HLS URL을 추출합니다.
  */
@@ -118,19 +119,19 @@ async function getFrameFingerprint(frameBuffer) {
  */
 function compareFingerprints(fp1, fp2) {
   if (!fp1 || !fp2 || fp1.length !== fp2.length) return 0;
-  
+
   let totalDiff = 0;
   const len = fp1.length;
-  
+
   // 샘플링: 전체 픽셀의 25%만 비교 (CPU 절약)
   const step = 4;
   let compared = 0;
-  
+
   for (let i = 0; i < len; i += step) {
     totalDiff += Math.abs(fp1[i] - fp2[i]);
     compared++;
   }
-  
+
   const avgDiff = totalDiff / compared;
   // avgDiff 범위: 0~255, 정규화하여 유사도로 변환
   return 1 - (avgDiff / 255);
@@ -194,7 +195,7 @@ export class StreamAnalyzer {
   constructor({ videoIds = ['FuuC4dpSQ1M', 'uwXgcTc8oY8'], intervalMs = 15000, onStatusChange } = {}) {
     this.videoIds = videoIds;
     this.intervalMs = intervalMs;
-    this.onStatusChange = onStatusChange || (() => {});
+    this.onStatusChange = onStatusChange || (() => { });
     this.currentStatus = StreamStatus.OFFLINE;
     this.currentVideoIdx = 0;
     this.streamUrl = null;
@@ -242,7 +243,7 @@ export class StreamAnalyzer {
       this.streamUrl = await extractStreamUrl(videoId);
       console.log(`[StreamAnalyzer] Google HLS URL obtained.`);
       this.consecutiveErrors = 0;
-      
+
       // 스트림 URL 갱신 시 상태 변경 통지 (HLS 주소 동적 갱신 전송용)
       this.updateStatus(this.currentStatus);
     } catch (err) {

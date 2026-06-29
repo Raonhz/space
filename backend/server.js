@@ -188,7 +188,9 @@ function broadcastStatus(statusData) {
 }
 
 // --- 스트림 분석기 초기화 ---
-const LIVE_VIDEO_IDS = ['FuuC4dpSQ1M', 'uwXgcTc8oY8'];
+const LIVE_VIDEO_IDS = process?.env?.YOUTUBE_VIDEO_IDS
+  ? process.env.YOUTUBE_VIDEO_IDS.split(',').map(id => id.trim())
+  : ['FuuC4dpSQ1M', 'uwXgcTc8oY8'];
 const ANALYSIS_INTERVAL = parseInt(process?.env?.ANALYSIS_INTERVAL_MS || '15000', 10);
 
 const analyzer = new StreamAnalyzer({
@@ -236,6 +238,10 @@ async function checkDependenciesAndStart() {
       console.log('[Server] ✓ sharp found');
       analyzer.start();
       console.log('[Server] Stream analyzer started with', ANALYSIS_INTERVAL + 'ms interval');
+      
+      // 라이브 ID 자동 수급 기동 및 6시간 주기 타이머 시작
+      updateLiveVideoId();
+      setInterval(updateLiveVideoId, 6 * 60 * 60 * 1000);
     } catch {
       console.warn('[Server] ✗ sharp not found — stream analysis disabled');
       console.warn('[Server]   Install: npm install sharp');
@@ -244,6 +250,35 @@ async function checkDependenciesAndStart() {
     console.log('[Server] Stream analysis is DISABLED. Server will still serve WebSocket connections with OFFLINE status.');
     // 오프라인 상태를 브로드캐스트 (프론트엔드가 폴백 로직 사용)
     broadcastStatus({ status: 'OFFLINE', streamUrl: null, stats: null, timestamp: Date.now() });
+  }
+}
+
+// --- 라이브 비디오 ID 자동 업데이트 데몬 ---
+async function updateLiveVideoId() {
+  const { exec } = await import('child_process');
+  const { promisify } = await import('util');
+  const execAsync = promisify(exec);
+
+  const targetChannelUrl = process.env.YOUTUBE_CHANNEL_URL || 'https://www.youtube.com/@NASA/live';
+
+  try {
+    console.log(`[Server] Checking for active Live Video ID from YouTube channel: ${targetChannelUrl}`);
+    const { stdout } = await execAsync(`yt-dlp --get-id ${targetChannelUrl}`);
+    const fetchedId = stdout.trim();
+
+    if (fetchedId && /^[a-zA-Z0-9_-]{11}$/.test(fetchedId)) {
+      console.log(`[Server] Automatically fetched active Live Video ID: ${fetchedId}`);
+      // 새로운 ID를 배열 가장 앞에 위치시켜 우선 분석하도록 업데이트
+      const updatedIds = [fetchedId, ...LIVE_VIDEO_IDS.filter(id => id !== fetchedId)];
+      analyzer.videoIds = updatedIds;
+      
+      if (analyzer.running) {
+        analyzer.currentVideoIdx = 0;
+        await analyzer.refreshStreamUrl();
+      }
+    }
+  } catch (err) {
+    console.warn('[Server] Failed to auto-update Live Video ID, using configured fallback:', err.message);
   }
 }
 
