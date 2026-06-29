@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lofi Space Station — 실시간 ISS 위치 트래커 & 우주 로파이 음악</title>
+    
+    <!-- 표준 검색엔진(SEO) 메타데이터 -->
+    <meta name="description" content="실시간 NASA ISS 우주 카메라 스트림과 국제우주정거장(ISS) 텔레메트리 현황을 감상하세요. 맑고 차분한 로파이(Lofi) 음악과 날씨 및 궤도 상식을 함께 제공합니다.">
+    <meta name="keywords" content="lofi space, 실시간 ISS, 국제우주정거장 위치, NASA live stream, 우주 로파이, space ambient music, space.raondr.com">
+    <meta name="author" content="Raondr">
+    <link rel="canonical" href="https://space.raondr.com">
+    
+    <!-- 소셜 공유 카드 (Open Graph) -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://space.raondr.com">
+    <meta property="og:title" content="Lofi Space Station — 실시간 ISS 궤도 카메라 & 로파이 비트">
+    <meta property="og:description" content="NASA 실시간 ISS 외부 카메라 피드와 고화질 우주 슬라이드쇼, 차분한 로파이 음악과 함께 궤도 여행을 떠나보세요.">
+    <meta property="og:image" content="https://space.raondr.com/assets/nasa/space_galaxy_1782689382007.png">
+    
+    <!-- 트위터 공유 카드 (Twitter Cards) -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lofi Space Station — 실시간 ISS 궤도 카메라 & 로파이 비트">
+    <meta name="twitter:description" content="NASA 실시간 ISS 외부 카메라 피드와 고화질 우주 슬라이드쇼, 차분한 로파이 음악과 함께 궤도 여행을 떠나보세요.">
+    <meta name="twitter:image" content="https://space.raondr.com/assets/nasa/space_galaxy_1782689382007.png">
+    
+    <!-- AI 엔진 및 크롤러 정밀 기계판독용 Schema.org 구조화 데이터 (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Lofi Space Station",
+      "url": "https://space.raondr.com",
+      "description": "실시간 NASA ISS 우주 스트림과 우주 비행 정보를 맑은 로파이 비트와 함께 제공하는 웹 서비스입니다.",
+      "applicationCategory": "EntertainmentApplication, MultimediaApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript. Requires HTML5 Canvas & Audio.",
+      "genre": "Space Ambient, Lofi Music, Live Streaming",
+      "featureList": [
+        "Real-time ISS Location Tracking",
+        "Live NASA External Camera Video Feed",
+        "High-definition Space Imagery Slideshow",
+        "Curated Shuffle-play Lofi Music Stream",
+        "Orbital Weather & Scientific Space Trivia Overlay"
+      ],
+      "author": {
+        "@type": "Organization",
+        "name": "Raondr"
+      }
+    }
+    </script>
+
+    <!-- 파비콘 및 글꼴 로드 -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+          margin: 0; 
+          overflow: hidden; 
+          background-color: #000; 
+          font-family: 'Outfit', sans-serif;
+        }
+        .font-mono {
+          font-family: 'Share Tech Mono', monospace;
+        }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+</body>
+</html>
