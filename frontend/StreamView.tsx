@@ -314,19 +314,18 @@ const StreamView: React.FC = () => {
         </div>
 
         <div className="flex gap-3 items-end justify-between">
-          {/* 위치 & 좌표 카드 */}
-          <div className="flex-1 max-w-xl bg-black/55 border border-white/10 rounded-2xl p-4 shadow-2xl">
-            <div className="flex items-start justify-between mb-3">
-              <div>
+          <div className="flex-1 min-w-0 max-w-xl bg-black/55 border border-white/10 rounded-2xl p-4 shadow-2xl">
+            <div className="flex items-start justify-between mb-3 gap-2">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 text-white/50 text-[9px] font-mono uppercase tracking-widest mb-1">
-                  <Radio size={10} className="text-red-500 animate-pulse" />
-                  ORBITAL TARGET
+                  <Radio size={10} className="text-red-500 animate-pulse shrink-0" />
+                  <span className="truncate">ORBITAL TARGET</span>
                 </div>
-                <h2 className="text-xl font-light text-white tracking-wide flex items-center gap-2">
-                  <MapPin className="text-blue-400 shrink-0" size={16} />
-                  <span className="truncate">{location?.name || 'CALIBRATING COORDINATES...'}</span>
+                <h2 className="text-xl font-light text-white tracking-wide flex items-start gap-2">
+                  <MapPin className="text-blue-400 shrink-0 mt-1" size={16} />
+                  <span className="break-words whitespace-normal leading-tight">{location?.name || 'CALIBRATING COORDINATES...'}</span>
                 </h2>
-                <p className="text-white/50 text-xs mt-0.5 ml-7">
+                <p className="text-white/50 text-xs mt-1 ml-6 break-words whitespace-normal leading-snug">
                   {location?.country} {location?.region ? `• ${location.region}` : ''}
                 </p>
               </div>

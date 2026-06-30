@@ -208,8 +208,8 @@ export class StreamAnalyzer {
     // 프레임 유사도 감지용
     this.prevFingerprint = null;
     this.staticFrameCount = 0;         // 연속 유사 프레임 수
-    this.staticThreshold = 0.97;       // 유사도 97% 이상이면 "정적"
-    this.staticCountForLOS = 2;        // 연속 2회(=30초) 정적이면 LOS 판정
+    this.staticThreshold = 0.992;      // 유사도 99.2% 이상이어야만 진짜 안내문 정지 화면으로 간주
+    this.staticCountForLOS = 3;        // 연속 3회(약 45초) 정적이면 LOS 판정
   }
 
   async start() {
@@ -286,11 +286,11 @@ export class StreamAnalyzer {
 
           if (similarity >= this.staticThreshold) {
             this.staticFrameCount++;
-            console.log(`[StreamAnalyzer] Static frame detected (${this.staticFrameCount}/${this.staticCountForLOS}, similarity: ${(similarity * 100).toFixed(1)}%) - Ignoring for space slow movement`);
+            console.log(`[StreamAnalyzer] Static frame detected (${this.staticFrameCount}/${this.staticCountForLOS}, similarity: ${(similarity * 100).toFixed(1)}%)`);
 
-            // 우주 영상의 특성상 느린 움직임이나 단색 배경일 때 프레임 유사도가 매우 높게 나올 수 있으므로,
-            // 유사도만으로 강제로 LOS_STATIC(정지 화면) 처리를 하지 않고 NORMAL로 취급합니다.
-            this.updateStatus(StreamStatus.NORMAL);
+            if (this.staticFrameCount >= this.staticCountForLOS) {
+              this.updateStatus(StreamStatus.LOS_STATIC);
+            }
           } else {
             // 프레임이 변화하고 있음 → 정상 영상
             this.staticFrameCount = 0;
