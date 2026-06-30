@@ -6,10 +6,12 @@
   "description": "NASA ISS stream analyzer & WebSocket status broadcaster",
   "main": "server.js",
   "scripts": {
-    "start": "node --env-file=.env.local server.js",
-    "dev": "nodemon --env-file=.env.local server.js"
+    "start": "node --env-file=../.env server.js",
+    "dev": "nodemon --env-file=../.env server.js",
+    "stream": "node stream-overlay.js"
   },
   "dependencies": {
+    "canvas": "^3.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "sharp": "^0.34.3",

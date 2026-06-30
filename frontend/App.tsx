@@ -207,11 +207,11 @@ const App: React.FC = () => {
   return (
     <main role="main" className="relative w-screen h-screen overflow-hidden bg-black font-sans selection:bg-white/30">
 
-      <VideoBackground 
-        isEclipsed={forceFallback} 
-        isConsoleActivated={isConsoleActivated} 
+      <VideoBackground
+        isEclipsed={forceFallback}
+        isConsoleActivated={isConsoleActivated}
         videoId={serverStreamVideoId}
-        onVideoStatusChange={setVideoStatus} 
+        onVideoStatusChange={setVideoStatus}
       />
 
       <header className="absolute top-0 left-0 w-full p-4 sm:p-6 z-30 flex justify-between items-start pointer-events-none">
@@ -369,8 +369,10 @@ const App: React.FC = () => {
       </div>
 
       {state.isLoading && (
-        <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
-          <div className="text-white font-mono tracking-widest animate-pulse">CONNECTING TO ORBITAL GRID...</div>
+        <div className="absolute inset-0 z-50 pointer-events-none flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-1000">
+          <div className="text-white font-mono text-xs sm:text-sm tracking-widest animate-pulse border border-white/20 bg-black/60 px-6 py-3 rounded-full shadow-2xl">
+            CONNECTING TO ORBITAL GRID...
+          </div>
         </div>
       )}
 

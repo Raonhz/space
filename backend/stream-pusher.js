@@ -7,7 +7,7 @@
  * 3. 프로세스 비정상 종료 시 자동 재기동 및 복구 로직 내장.
  */
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '../.env' });
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';

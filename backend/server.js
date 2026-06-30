@@ -7,7 +7,7 @@
  * 3. ISS 위치 API 프록시 및 캐싱 (선택적 확장용)
  */
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '../.env' });
 import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
 import { StreamAnalyzer, StreamStatus } from './stream-analyzer.js';

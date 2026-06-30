@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Hls from 'hls.js';
 
 interface VideoBackgroundProps {
   isEclipsed: boolean;
@@ -30,7 +31,7 @@ const SVGEarth: React.FC = () => (
       </radialGradient>
     </defs>
     <rect width="100%" height="100%" fill="url(#space-bg)" />
-    
+
     {/* 반짝이는 별무리 */}
     <g fill="#ffffff" opacity="0.3">
       <circle cx="100" cy="150" r="1" className="animate-pulse" />
@@ -73,7 +74,7 @@ const SVGNebula: React.FC = () => (
     {/* 성운 영역 별자리 연결선 */}
     <path d="M 150 150 L 220 200 L 300 180 M 300 180 L 320 120" stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" fill="none" />
     <path d="M 550 400 L 590 450 L 680 430 L 660 350" stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" fill="none" />
-    
+
     <g fill="#ffffff" opacity="0.5">
       <circle cx="150" cy="150" r="1.5" />
       <circle cx="220" cy="200" r="1.5" className="animate-pulse" />
@@ -103,10 +104,10 @@ const SVGGalaxy: React.FC = () => (
       </radialGradient>
     </defs>
     <rect width="100%" height="100%" fill="#020208" />
-    
+
     {/* 은하수 띠 */}
     <ellipse cx="400" cy="300" rx="460" ry="110" fill="url(#core-glow)" transform="rotate(-12, 400, 300)" filter="blur(25px)" />
-    
+
     {/* 은하 중심부 초미세 별무리 */}
     <g fill="#ffffff" opacity="0.4">
       <circle cx="380" cy="290" r="1" />
@@ -126,64 +127,64 @@ const FALLBACK_NASA_IMAGES = Array.from({ length: 31 }, (_, i) => {
   return `/assets/nasa/nasa_${i + 1}.webp`;
 });
 
-const VideoBackground: React.FC<VideoBackgroundProps> = ({ 
-  isEclipsed, 
-  isConsoleActivated = false, 
-  videoId = null, 
-  onVideoStatusChange 
+const VideoBackground: React.FC<VideoBackgroundProps> = ({
+  isEclipsed,
+  isConsoleActivated = false,
+  videoId = null,
+  onVideoStatusChange
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isVideoTimeout, setIsVideoTimeout] = useState(false);
-  const [imgUrls, setImgUrls] = useState<string[]>(FALLBACK_NASA_IMAGES);
-  const [imgErrors, setImgErrors] = useState<boolean[]>(Array(31).fill(false));
   const [retryKey, setRetryKey] = useState(0);
   const playerRef = useRef<any>(null);
 
-  // 컴포넌트 로드 시 백엔드 API로부터 가공 완료된 WebP 이미지 리스트 로드
+  // HLS 비디오 상태 관리
+  const fallbackVideoRef = useRef<HTMLVideoElement>(null);
+  const HLS_STREAM_URL = 'https://space.raondr.com/space/fallback.m3u8';
+
+  // 라이브 비디오가 정상 송출 가능한 상태인지 판별 (로딩 완료, 에러 없음, 그리고 밤/우회 상태가 아님)
+  const showLiveVideo = isVideoLoaded && !isVideoTimeout && !isEclipsed;
+
+  // --- HLS 폴백 비디오 스트리밍 초기화 ---
   useEffect(() => {
-    fetch('/api/nasa-images')
-      .then(res => {
-        if (!res.ok) throw new Error('API Error');
-        return res.json();
-      })
-      .then((data: string[]) => {
-        if (data && data.length > 0) {
-          // 파일명에 공백 등이 섞일 수 있으므로 인코딩하여 매핑
-          const formattedUrls = data.map(filename => `/assets/nasa/${encodeURIComponent(filename)}`);
-          console.log(`[VideoBackground] Loaded ${formattedUrls.length} WebP images from backend.`);
-          setImgUrls(formattedUrls);
-          setImgErrors(Array(formattedUrls.length).fill(false));
-        }
-      })
-      .catch(err => {
-        console.warn('[VideoBackground] Failed to fetch NASA WebP list, using fallbacks:', err.message);
+    if (showLiveVideo) return; // 유튜브 라이브 모드일 땐 HLS 로드 안 함
+
+    const video = fallbackVideoRef.current;
+    if (!video) return;
+
+    let hls: Hls | null = null;
+
+    if (Hls.isSupported()) {
+      hls = new Hls({
+        autoStartLoad: true,
+        capLevelToPlayerSize: true,
       });
-  }, []);
+      hls.loadSource(HLS_STREAM_URL);
+      hls.attachMedia(video);
 
-  const handleImgError = (index: number) => {
-    setImgErrors(prev => {
-      const next = [...prev];
-      if (next[index] !== undefined) {
-        next[index] = true;
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(e => console.log('HLS Auto-play prevented', e));
+      });
+
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = HLS_STREAM_URL;
+      video.addEventListener('loadedmetadata', () => {
+        video.play().catch(e => console.log('Native HLS Auto-play prevented', e));
+      });
+    }
+
+    return () => {
+      if (hls) {
+        hls.destroy();
       }
-      return next;
-    });
-  };
-
-  // 6초마다 다음 고화질 우주 화면으로 부드럽게 크로스페이드 (동적 이미지 수 기준 순환)
-  useEffect(() => {
-    if (imgUrls.length === 0) return;
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % imgUrls.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [imgUrls]);
+    };
+  }, [showLiveVideo]);
 
   // 영상 로딩 실패(Timeout) 상태인 경우 45초 후에 자동으로 접속을 재시도
   useEffect(() => {
     if (!isVideoTimeout) return;
-    
+
     console.log("Scheduling stream play retry in 45 seconds...");
     const retryTimer = setTimeout(() => {
       console.log("Attempting retry play on YouTube stream...");
@@ -286,7 +287,7 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
       const previousCallback = (window as any).onYouTubeIframeAPIReady;
       (window as any).onYouTubeIframeAPIReady = () => {
         if (previousCallback) {
-          try { previousCallback(); } catch (e) {}
+          try { previousCallback(); } catch (e) { }
         }
         initPlayer();
       };
@@ -331,12 +332,11 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
     return () => clearTimeout(timer);
   }, [isVideoLoaded, videoId, isConsoleActivated]);
 
-  // 라이브 비디오가 정상 송출 가능한 상태인지 판별 (로딩 완료, 에러 없음, 그리고 밤/우회 상태가 아님)
-  const showLiveVideo = isVideoLoaded && !isVideoTimeout && !isEclipsed;
+  // (위에서 미리 정의했으므로 중복 선언 제거)
 
   return (
     <div className="absolute inset-0 w-full h-full z-0 pointer-events-none bg-black overflow-hidden">
-      
+
       {/* 시네마틱 우주 항해 켄 번즈(Ken Burns) 애니메이션 효과 스타일 주입 */}
       <style>{`
         @keyframes cinematicSpaceTravel {
@@ -354,11 +354,10 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
 
       {/* ISS 라이브 비디오 피드 (실시간 HLS 재생이 가능하고 밤/우회 상태가 아닐 때 노출) */}
       <div
-        className={`absolute inset-0 w-full h-full transition-opacity duration-[1500ms] ease-in-out overflow-hidden ${
-          showLiveVideo ? 'z-10 opacity-100 visible' : 'z-0 opacity-0 invisible pointer-events-none'
-        }`}
+        className={`absolute inset-0 w-full h-full transition-opacity duration-[1500ms] ease-in-out overflow-hidden ${showLiveVideo ? 'z-10 opacity-100 visible' : 'z-0 opacity-0 invisible pointer-events-none'
+          }`}
       >
-        <div 
+        <div
           style={{
             position: 'absolute',
             top: '50%',
@@ -378,46 +377,20 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
         </div>
       </div>
 
-      {/* 대체 이미지 슬라이드쇼 — 현재/이전/다음 3장만 마운트 (DOM 최적화) */}
+      {/* 대체 영상: HLS 폴백 비디오 스트리밍 */}
       {!showLiveVideo && (
-        <div className="absolute inset-0 w-full h-full z-10 overflow-hidden bg-black">
-          {imgUrls.map((url, index) => {
-            const isActive = currentIndex === index;
-            const len = imgUrls.length;
-            const isPrev = index === (currentIndex - 1 + len) % len;
-            const isNext = index === (currentIndex + 1) % len;
-            
-            // 현재/이전/다음 3장만 DOM에 마운트
-            if (!isActive && !isPrev && !isNext) return null;
-            
-            return (
-              <div
-                key={index}
-                className={`absolute inset-0 w-full h-full transition-all duration-[2500ms] ease-in-out ${
-                  isActive 
-                    ? 'opacity-100 z-10 scale-100 blur-0' 
-                    : 'opacity-0 z-0 scale-[1.08] blur-md'
-                }`}
-              >
-                {!imgErrors[index] ? (
-                  <img 
-                    src={url} 
-                    alt={`Earth Orbit View ${index + 1}`} 
-                    className={`w-full h-full object-cover select-none ${
-                      (isActive || isPrev) ? 'cinematic-space-active' : 'scale-[1.02]'
-                    }`}
-                    onError={() => handleImgError(index)}
-                  />
-                ) : (
-                  // 2차 폴백: 로컬 이미지 실패 시 순차적으로 3가지 테마 SVG 분배
-                  index % 3 === 0 ? <SVGEarth /> : index % 3 === 1 ? <SVGNebula /> : <SVGGalaxy />
-                )}
-              </div>
-            );
-          })}
+        <div className="absolute inset-0 w-full h-full z-10 overflow-hidden bg-black transition-opacity duration-1000">
+          <video
+            ref={fallbackVideoRef}
+            className="w-full h-full object-cover opacity-100"
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
         </div>
       )}
-      
+
       {/* 텍스트 가독성 확보용 부드러운 상하단 그라데이션 필터 */}
       <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-black/20 to-transparent z-20 pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/20 via-black/40 to-transparent z-20 pointer-events-none"></div>
