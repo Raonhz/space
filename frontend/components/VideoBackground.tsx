@@ -122,34 +122,26 @@ const SVGGalaxy: React.FC = () => (
   </svg>
 );
 
-// 31개의 기본 고화질 NASA 우주 실사진 이미지 폴백 (API 연결 실패 대비)
-const FALLBACK_NASA_IMAGES = Array.from({ length: 31 }, (_, i) => {
-  return `/assets/nasa/nasa_${i + 1}.webp`;
-});
-
 const VideoBackground: React.FC<VideoBackgroundProps> = ({
   isEclipsed,
   isConsoleActivated = false,
   videoId = null,
   onVideoStatusChange
 }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  const [isVideoTimeout, setIsVideoTimeout] = useState(false);
-  const [retryKey, setRetryKey] = useState(0);
-  const playerRef = useRef<any>(null);
-
-  // HLS 비디오 상태 관리
+  // 로컬 비디오 전용 상태 (유튜브 상태 관리 제거)
   const fallbackVideoRef = useRef<HTMLVideoElement>(null);
   const HLS_STREAM_URL = 'https://space.raondr.com/space/fallback.m3u8';
 
-  // 라이브 비디오가 정상 송출 가능한 상태인지 판별 (로딩 완료, 에러 없음, 그리고 밤/우회 상태가 아님)
-  const showLiveVideo = isVideoLoaded && !isVideoTimeout && !isEclipsed;
+  // 비디오가 로딩되었는지 여부 (상위 컴포넌트에 전달용)
+  useEffect(() => {
+    if (onVideoStatusChange) {
+      // 로컬 비디오는 항시 가동이므로 성공 상태를 반환
+      onVideoStatusChange({ isLoaded: true, isTimeout: false });
+    }
+  }, [onVideoStatusChange]);
 
   // --- HLS 폴백 비디오 스트리밍 초기화 ---
   useEffect(() => {
-    if (showLiveVideo) return; // 유튜브 라이브 모드일 땐 HLS 로드 안 함
-
     const video = fallbackVideoRef.current;
     if (!video) return;
 
@@ -179,217 +171,21 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
         hls.destroy();
       }
     };
-  }, [showLiveVideo]);
-
-  // 영상 로딩 실패(Timeout) 상태인 경우 45초 후에 자동으로 접속을 재시도
-  useEffect(() => {
-    if (!isVideoTimeout) return;
-
-    console.log("Scheduling stream play retry in 45 seconds...");
-    const retryTimer = setTimeout(() => {
-      console.log("Attempting retry play on YouTube stream...");
-      setIsVideoLoaded(false);
-      setIsVideoTimeout(false);
-      setRetryKey(prev => prev + 1);
-    }, 45000);
-
-    return () => clearTimeout(retryTimer);
-  }, [isVideoTimeout]);
-
-  // isEclipsed 상태가 true에서 false(낮 진입)로 바뀔 때 비디오 에러/인덱스 상태 완전 초기화하여 신규 접속 시도
-  useEffect(() => {
-    if (!isEclipsed) {
-      setIsVideoLoaded(false);
-      setIsVideoTimeout(false);
-    }
-  }, [isEclipsed]);
-
-  // 유튜브 Iframe 플레이어 초기화 및 갱신
-  useEffect(() => {
-    if (isEclipsed || !videoId) {
-      setIsVideoLoaded(false);
-      if (playerRef.current) {
-        try {
-          playerRef.current.destroy();
-        } catch (e) {
-          console.warn("Error destroying player:", e);
-        }
-        playerRef.current = null;
-      }
-      return;
-    }
-
-    console.log(`[VideoBackground] Initializing YouTube live stream play: ${videoId}`);
-
-    if (playerRef.current) {
-      try {
-        playerRef.current.destroy();
-      } catch (e) {
-        // ignore
-      }
-      playerRef.current = null;
-    }
-
-    // YouTube Iframe API가 로드되지 않았다면 로드
-    if (!(window as any).YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-    }
-
-    let player: any;
-
-    const initPlayer = () => {
-      if (isEclipsed || !videoId) return;
-
-      player = new (window as any).YT.Player('youtube-player', {
-        height: '100%',
-        width: '100%',
-        videoId: videoId,
-        playerVars: {
-          autoplay: 1,
-          mute: 1,
-          controls: 0,
-          rel: 0,
-          showinfo: 0,
-          iv_load_policy: 3,
-          modestbranding: 1,
-          disablekb: 1,
-          fs: 0,
-          playsinline: 1,
-          playlist: videoId,
-          loop: 1
-        },
-        events: {
-          onReady: (event: any) => {
-            event.target.playVideo();
-            event.target.mute();
-          },
-          onStateChange: (event: any) => {
-            if (event.data === (window as any).YT.PlayerState.PLAYING) {
-              setIsVideoLoaded(true);
-              setIsVideoTimeout(false);
-            }
-          },
-          onError: (event: any) => {
-            console.error("[VideoBackground] YouTube Player error event:", event.data);
-            handleVideoFail();
-          }
-        }
-      });
-      playerRef.current = player;
-    };
-
-    if ((window as any).YT && (window as any).YT.Player) {
-      initPlayer();
-    } else {
-      const previousCallback = (window as any).onYouTubeIframeAPIReady;
-      (window as any).onYouTubeIframeAPIReady = () => {
-        if (previousCallback) {
-          try { previousCallback(); } catch (e) { }
-        }
-        initPlayer();
-      };
-    }
-
-    return () => {
-      if (playerRef.current) {
-        try {
-          playerRef.current.destroy();
-        } catch (e) {
-          // ignore
-        }
-        playerRef.current = null;
-      }
-      setIsVideoLoaded(false);
-    };
-  }, [videoId, isEclipsed, retryKey]);
-
-  // 비디오 재생 실패 처리
-  const handleVideoFail = () => {
-    console.warn("YouTube stream failed to play. Displaying fallback slideshow.");
-    setIsVideoTimeout(true);
-  };
-
-  // 비디오 상태 변경 시 부모 컴포넌트에 알림
-  useEffect(() => {
-    if (onVideoStatusChange) {
-      onVideoStatusChange({ isLoaded: isVideoLoaded, isTimeout: isVideoTimeout });
-    }
-  }, [isVideoLoaded, isVideoTimeout, onVideoStatusChange]);
-
-  // 비디오 연결이 25초 이상 지연되면 대체 슬라이드쇼 전환
-  useEffect(() => {
-    if (!isConsoleActivated || !videoId) return;
-
-    const timer = setTimeout(() => {
-      if (!isVideoLoaded) {
-        console.warn(`Timeout loading stream from YouTube URL`);
-        handleVideoFail();
-      }
-    }, 25000);
-    return () => clearTimeout(timer);
-  }, [isVideoLoaded, videoId, isConsoleActivated]);
-
-  // (위에서 미리 정의했으므로 중복 선언 제거)
+  }, []);
 
   return (
     <div className="absolute inset-0 w-full h-full z-0 pointer-events-none bg-black overflow-hidden">
-
-      {/* 시네마틱 우주 항해 켄 번즈(Ken Burns) 애니메이션 효과 스타일 주입 */}
-      <style>{`
-        @keyframes cinematicSpaceTravel {
-          0% {
-            transform: scale(1.02) rotate(0deg) translate(0px, 0px);
-          }
-          100% {
-            transform: scale(1.15) rotate(0.8deg) translate(-2%, -1%);
-          }
-        }
-        .cinematic-space-active {
-          animation: cinematicSpaceTravel 9000ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-      `}</style>
-
-      {/* ISS 라이브 비디오 피드 (실시간 HLS 재생이 가능하고 밤/우회 상태가 아닐 때 노출) */}
-      <div
-        className={`absolute inset-0 w-full h-full transition-opacity duration-[1500ms] ease-in-out overflow-hidden ${showLiveVideo ? 'z-10 opacity-100 visible' : 'z-0 opacity-0 invisible pointer-events-none'
-          }`}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '100vw',
-            height: '56.25vw', // 16:9 비율 유지
-            minHeight: '100vh',
-            minWidth: '177.77vh', // 16:9 비율 유지
-          }}
-          className="pointer-events-none"
-        >
-          <div
-            id="youtube-player"
-            className="w-full h-full object-cover pointer-events-none"
-          />
-        </div>
+      {/* 로컬 대체 영상: HLS 폴백 비디오 스트리밍 전용 화면 */}
+      <div className="absolute inset-0 w-full h-full z-10 overflow-hidden bg-black transition-opacity duration-1000">
+        <video
+          ref={fallbackVideoRef}
+          className="w-full h-full object-cover opacity-100"
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
       </div>
-
-      {/* 대체 영상: HLS 폴백 비디오 스트리밍 */}
-      {!showLiveVideo && (
-        <div className="absolute inset-0 w-full h-full z-10 overflow-hidden bg-black transition-opacity duration-1000">
-          <video
-            ref={fallbackVideoRef}
-            className="w-full h-full object-cover opacity-100"
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
-        </div>
-      )}
 
       {/* 텍스트 가독성 확보용 부드러운 상하단 그라데이션 필터 */}
       <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-black/20 to-transparent z-20 pointer-events-none"></div>

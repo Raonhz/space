@@ -10,7 +10,6 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
 import express from 'express';
 import { WebSocketServer, WebSocket } from 'ws';
-import { StreamAnalyzer, StreamStatus } from './stream-analyzer.js';
 import https from 'https';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -163,8 +162,8 @@ wss.on('connection', (ws) => {
   console.log(`[WS] Client connected. Total: ${connectedClients.size + 1}`);
   connectedClients.add(ws);
 
-  // 연결 즉시 현재 상태 전송
-  const currentStatus = analyzer.getStatus();
+  // 연결 즉시 현재 더미 상태 전송 (웹 전용 로컬 모드)
+  const currentStatus = { status: 'OFFLINE', streamUrl: null, stats: null, timestamp: Date.now() };
   ws.send(JSON.stringify(currentStatus));
 
   ws.on('close', () => {
@@ -187,115 +186,19 @@ function broadcastStatus(statusData) {
   }
 }
 
-// --- 스트림 분석기 초기화 ---
-const LIVE_VIDEO_IDS = process?.env?.YOUTUBE_VIDEO_IDS
-  ? process.env.YOUTUBE_VIDEO_IDS.split(',').map(id => id.trim())
-  : ['FuuC4dpSQ1M', 'uwXgcTc8oY8'];
-const ANALYSIS_INTERVAL = parseInt(process?.env?.ANALYSIS_INTERVAL_MS || '15000', 10);
-
-const analyzer = new StreamAnalyzer({
-  videoIds: LIVE_VIDEO_IDS,
-  intervalMs: ANALYSIS_INTERVAL,
-  onStatusChange: (statusData) => {
-    const label = statusData.status;
-    const stats = statusData.stats ? ` (dark:${statusData.stats.darkRatio}% blue:${statusData.stats.blueRatio}% bright:${statusData.stats.avgBrightness}${statusData.stats.similarity !== undefined ? ` sim:${statusData.stats.similarity}%` : ''})` : '';
-    console.log(`[StreamAnalyzer] Status: ${label}${stats}`);
-    broadcastStatus(statusData);
-  },
-});
-
-// yt-dlp 및 ffmpeg 설치 여부 확인 후 분석기 기동
-async function checkDependenciesAndStart() {
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
-
-  let hasYtdlp = false;
-  let hasFfmpeg = false;
-
-  try {
-    await execAsync('yt-dlp --version');
-    hasYtdlp = true;
-    console.log('[Server] ✓ yt-dlp found');
-  } catch {
-    console.warn('[Server] ✗ yt-dlp not found — stream analysis disabled');
-    console.warn('[Server]   Install: pip install yt-dlp');
-  }
-
-  try {
-    await execAsync('ffmpeg -version');
-    hasFfmpeg = true;
-    console.log('[Server] ✓ ffmpeg found');
-  } catch {
-    console.warn('[Server] ✗ ffmpeg not found — stream analysis disabled');
-    console.warn('[Server]   Install: https://ffmpeg.org/download.html');
-  }
-
-  if (hasYtdlp && hasFfmpeg) {
-    try {
-      // sharp 로딩 확인
-      await import('sharp');
-      console.log('[Server] ✓ sharp found');
-      analyzer.start();
-      console.log('[Server] Stream analyzer started with', ANALYSIS_INTERVAL + 'ms interval');
-      
-      // 라이브 ID 자동 수급 기동 및 6시간 주기 타이머 시작
-      updateLiveVideoId();
-      setInterval(updateLiveVideoId, 6 * 60 * 60 * 1000);
-    } catch {
-      console.warn('[Server] ✗ sharp not found — stream analysis disabled');
-      console.warn('[Server]   Install: npm install sharp');
-    }
-  } else {
-    console.log('[Server] Stream analysis is DISABLED. Server will still serve WebSocket connections with OFFLINE status.');
-    // 오프라인 상태를 브로드캐스트 (프론트엔드가 폴백 로직 사용)
-    broadcastStatus({ status: 'OFFLINE', streamUrl: null, stats: null, timestamp: Date.now() });
-  }
-}
-
-// --- 라이브 비디오 ID 자동 업데이트 데몬 ---
-async function updateLiveVideoId() {
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
-
-  const targetChannelUrl = process.env.YOUTUBE_CHANNEL_URL || 'https://www.youtube.com/@NASA/live';
-
-  try {
-    console.log(`[Server] Checking for active Live Video ID from YouTube channel: ${targetChannelUrl}`);
-    const { stdout } = await execAsync(`yt-dlp --get-id ${targetChannelUrl}`);
-    const fetchedId = stdout.trim();
-
-    if (fetchedId && /^[a-zA-Z0-9_-]{11}$/.test(fetchedId)) {
-      console.log(`[Server] Automatically fetched active Live Video ID: ${fetchedId}`);
-      // 새로운 ID를 배열 가장 앞에 위치시켜 우선 분석하도록 업데이트
-      const updatedIds = [fetchedId, ...LIVE_VIDEO_IDS.filter(id => id !== fetchedId)];
-      analyzer.videoIds = updatedIds;
-      
-      if (analyzer.running) {
-        analyzer.currentVideoIdx = 0;
-        await analyzer.refreshStreamUrl();
-      }
-    }
-  } catch (err) {
-    console.warn('[Server] Failed to auto-update Live Video ID, using configured fallback:', err.message);
-  }
-}
-
-checkDependenciesAndStart();
+// --- 스트림 분석기 초기화 (비활성화) ---
+// 클라이언트 PC 송출 및 로컬 비디오 전용 사용으로 인해 무거운 외부 스트리밍 추출 로직을 해제합니다.
+console.log('[Server] External stream analysis is DISABLED. Running in local fallback mode.');
 
 // --- 프로세스 종료 시 정리 ---
 process.on('SIGINT', () => {
   console.log('[Server] Shutting down...');
-  analyzer.stop();
   wss.close();
   server.close();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  analyzer.stop();
-  wss.close();
   server.close();
   process.exit(0);
 });
