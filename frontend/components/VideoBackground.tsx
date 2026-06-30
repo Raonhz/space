@@ -130,7 +130,7 @@ const VideoBackground: React.FC<VideoBackgroundProps> = ({
 }) => {
   // 로컬 비디오 전용 상태 (유튜브 상태 관리 제거)
   const fallbackVideoRef = useRef<HTMLVideoElement>(null);
-  const HLS_STREAM_URL = 'https://space.raondr.com/space/fallback.m3u8';
+  const HLS_STREAM_URL = 'https://video.raondr.com/space/fallback.m3u8';
 
   // 비디오가 로딩되었는지 여부 (상위 컴포넌트에 전달용)
   useEffect(() => {
