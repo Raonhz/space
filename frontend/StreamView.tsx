@@ -214,7 +214,7 @@ const StreamView: React.FC = () => {
 
   if (state.isLoading) {
     return (
-      <main className="relative w-screen h-screen overflow-hidden bg-black flex items-center justify-center">
+      <main className="relative w-screen h-[100dvh] overflow-hidden bg-black flex items-center justify-center">
         <div className="text-white font-mono tracking-widest animate-pulse text-sm">
           CONNECTING TO ORBITAL GRID...
         </div>
@@ -223,7 +223,7 @@ const StreamView: React.FC = () => {
   }
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden bg-black font-sans selection:bg-white/30">
+    <main className="relative w-screen h-[100dvh] overflow-hidden bg-black font-sans selection:bg-white/30">
 
       {/* ─── 배경: HLS 비디오 플레이어 ─── */}
       <div className="absolute inset-0 w-full h-full z-0 bg-black">
@@ -306,7 +306,7 @@ const StreamView: React.FC = () => {
       </header>
 
       {/* ─── 하단: 텔레메트리 + 팩트 ─── */}
-      <div className="absolute bottom-0 left-0 w-full p-4 z-30 flex flex-col gap-2">
+      <div className="absolute bottom-0 left-0 w-full p-4 pb-8 sm:pb-4 z-30 flex flex-col gap-2">
         {/* ISS 라이브 카메라 피드 라벨 */}
         <div className="text-[9px] font-mono text-white/40 tracking-[0.2em] uppercase pl-1 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>

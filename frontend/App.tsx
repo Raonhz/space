@@ -205,7 +205,7 @@ const App: React.FC = () => {
   }, [isEclipsed, isSignalUnstable, serverStreamStatus]);
 
   return (
-    <main role="main" className="relative w-screen h-screen overflow-hidden bg-black font-sans selection:bg-white/30">
+    <main role="main" className="relative w-screen h-[100dvh] overflow-hidden bg-black font-sans selection:bg-white/30">
 
       <VideoBackground
         isEclipsed={forceFallback}
