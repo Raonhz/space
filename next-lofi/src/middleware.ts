@@ -26,6 +26,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api') || 
     pathname.startsWith('/assets') || 
     pathname.startsWith('/music') ||
+    pathname.startsWith('/icon') ||
     pathname.includes('.')
   ) {
     return NextResponse.next();
