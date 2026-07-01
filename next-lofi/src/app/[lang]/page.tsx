@@ -89,9 +89,7 @@ export default async function Page({ params }: { params: Promise<{ lang: string 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <Script
-        id="adsbygoogle-init"
-        strategy="afterInteractive"
+      <script
         async
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8746170027746957"
         crossOrigin="anonymous"
