@@ -5,10 +5,9 @@
 # 1. 의존성 패키지 (Dependency packages)
 node_modules/
 /node_modules/
-frontend/node_modules/
-backend/node_modules/
+next-lofi/node_modules/
 
-# 2. 로컬 환경 설정 파일 (Sensitive environment keys - 보안 핵심)
+# 2. 환경 설정 파일 (Sensitive environment keys - 보안 핵심)
 .env
 .env.local
 .env.development.local
@@ -16,23 +15,17 @@ backend/node_modules/
 .env.production.local
 *.env
 *.env.local
-frontend/.env
-backend/.env.local
 
-# 3. 대용량 미디어 파일 및 수급 음원 (Large asset files - 500MB+ push block 방어)
-# (음원은 깃허브에 올리지 않고 배포 서버에서 download-lofi.js 스크립트로 직접 구축합니다)
-/backend/media/music/
-/backend/media/music/*
-backend/media/music/
-media/music/
+# 3. 대용량 미디어 파일 및 에셋 (Large asset files - 500MB+ 방어)
 *.mp3
+*.mp4
+*.webp
+/next-lofi/public/music/
+/next-lofi/public/video/
 
-# 4. 프론트엔드 프로덕션 빌드 결과물 (Production build artifacts)
-/frontend/dist/
-/frontend/build/
-/frontend/public/video/*
-dist/
-build/
+# 4. Next.js 빌드 결과물 (Next.js build artifacts)
+/next-lofi/.next/
+/next-lofi/out/
 
 # 5. 로컬 IDE / OS 캐시 (IDE and OS caches)
 .vscode/
@@ -43,20 +36,12 @@ build/
 Thumbs.db
 desktop.ini
 
-# 6. 컴파일 캐시 및 런타임 로그 (Compile caches and runtime logs)
+# 6. 컴파일 캐시 및 런타임 로그
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .eslintcache
-.vite/
 .turbo/
 .cache/
-b a c k e n d / S p a c e S t a t i o n . m p 4  
- 
-# 7. Live Stream (Client)
-liveStream/.env
-liveStream/node_modules/
-liveStream/assets/*
-!liveStream/assets/.gitkeep
